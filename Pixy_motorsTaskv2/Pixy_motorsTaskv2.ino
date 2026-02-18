@@ -1,19 +1,19 @@
-###
-##include <DualMAX14870MotorShield.h>
+#include <DualMAX14870MotorShield.h>
 #include <Pixy2.h>
 
 DualMAX14870MotorShield Motors;
 Pixy2 pixy;
 
-//**
+
 // Ultrasonic sensor code
 int signal=8;
 int distance;
 unsigned long pulseduration=0;
 
-//**
-
-
+//ir sensors
+#define irLeft A4
+#define irRight A5
+int DISTANCE_CUTOFF = 3; //3cm
 /*
 Motor1: LEFT
 Motor2: RIGHT
@@ -95,8 +95,26 @@ measureDistance();
       break;
 
     case main:
+      
+      //check IR Sensors
+      float leftVolts = analogRead(irLeft)*0.0048828125; // value from sensor * (5/1024)
+      float rightVolts = analogRead(irRight)*0.0048828125;
+
+      if (leftVolts > DISTANCE_CUTOFF){
+        myState = correctLeft;
+        break;
+      }
+
+      if (rightVolts > DISTANCE_CUTOFF){
+        myState = correctRight;
+        break;
+      }
+      
+      //Move Forwards
       Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
       Serial.println("spinning...");
+      
+      //check Pixy
       if (pixy.ccc.numBlocks)
       {
         for (int i = 0; i < pixy.ccc.numBlocks; i++)
@@ -131,7 +149,7 @@ measureDistance();
 
 
     case correctLeft:
-      Serial.println("left wall too close - moving right")
+      Serial.println("left wall too close - moving right");
 
       while (abs(counter1) < CORRECTION_COUNT)
       {
@@ -140,7 +158,7 @@ measureDistance();
       }      
 
     case correctRight:
-      Serial.println("right wall too close - moving left")
+      Serial.println("right wall too close - moving left");
 
       while (abs(counter2) < CORRECTION_COUNT)
       {
