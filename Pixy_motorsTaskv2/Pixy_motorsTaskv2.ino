@@ -38,10 +38,14 @@ float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
 int TURN_SPEED = 50;
 int STRAIGHT_SPEED = 100;
 
+int CORRECTION_COUNT = 500;
+
 enum States
 {
   initialize,
   main,
+  correctLeft,
+  correctRight,
   left,
   right,
   back
@@ -124,6 +128,27 @@ measureDistance();
       }
       break;
 
+
+
+    case correctLeft:
+      Serial.println("left wall too close - moving right")
+
+      while (abs(counter1) < CORRECTION_COUNT)
+      {
+        Motors.setSpeeds(TURN_SPEED, 0);
+        Serial.println(counter1);
+      }      
+
+    case correctRight:
+      Serial.println("right wall too close - moving left")
+
+      while (abs(counter2) < CORRECTION_COUNT)
+      {
+        Motors.setSpeeds(0, TURN_SPEED);
+        Serial.println(counter2);
+      }    
+
+
     case left:
       Serial.println("turning left");
       counter1 = 0;
@@ -139,6 +164,8 @@ measureDistance();
       myState = main;
       break;
 
+    
+    
     case right:
       Serial.println("turning right");
       counter1 = 0;
@@ -154,6 +181,8 @@ measureDistance();
       myState = main;
       break;
 
+    
+    
     case back:
       Serial.println("turning around");
       counter1 = 0;
