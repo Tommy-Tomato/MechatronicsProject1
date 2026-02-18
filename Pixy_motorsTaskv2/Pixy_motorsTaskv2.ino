@@ -1,8 +1,18 @@
-#include <DualMAX14870MotorShield.h>
+###
+##include <DualMAX14870MotorShield.h>
 #include <Pixy2.h>
 
 DualMAX14870MotorShield Motors;
 Pixy2 pixy;
+
+//**
+// Ultrasonic sensor code
+int signal=8;
+int distance;
+unsigned long pulseduration=0;
+
+//**
+
 
 /*
 Motor1: LEFT
@@ -41,6 +51,13 @@ States myState = initialize;
 
 void setup()
 {
+
+//** ultrasonic sensor
+
+ pinMode(signal, OUTPUT);
+
+//**
+
   Motors.enableDrivers();
 
   Serial.begin(9600);
@@ -60,6 +77,11 @@ void setup()
 
 void loop()
 {
+//**
+//Get the raw distance measurement value
+measureDistance();
+//**
+
   pixy.ccc.getBlocks();
 
   switch (myState)
@@ -188,3 +210,28 @@ void changeUp2B()
   else
     counter2++;
 }
+
+//**
+// ultrasonic sensor distance measuring function
+void measureDistance()
+{
+ // set pin as output so we can send a pulse
+ pinMode(signal, OUTPUT);
+// set output to LOW
+ digitalWrite(signal, LOW);
+ delayMicroseconds(5);
+ 
+ // now send the 5uS pulse out to activate Ping)))
+ digitalWrite(signal, HIGH);
+ delayMicroseconds(5);
+ digitalWrite(signal, LOW);
+ 
+ // now we need to change the digital pin
+ // to input to read the incoming pulse
+ pinMode(signal, INPUT);
+ 
+ // finally, measure the length of the incoming pulse
+ pulseduration = pulseIn(signal, HIGH);
+}
+
+//**
