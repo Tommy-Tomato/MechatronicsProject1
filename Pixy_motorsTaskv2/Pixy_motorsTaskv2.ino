@@ -13,7 +13,7 @@ unsigned long pulseduration=0;
 //ir sensors
 #define irLeft A4
 #define irRight A5
-int DISTANCE_CUTOFF = 3; //3cm
+int DISTANCE_CUTOFF = 3; //10cm
 /*
 Motor1: LEFT
 Motor2: RIGHT
@@ -99,6 +99,8 @@ measureDistance();
       //check IR Sensors
       float leftVolts = analogRead(irLeft)*0.0048828125; // value from sensor * (5/1024)
       float rightVolts = analogRead(irRight)*0.0048828125;
+      Serial.println("leftVolts");
+      Serial.println("rightVolts");
 
       if (leftVolts > DISTANCE_CUTOFF){
         myState = correctLeft;
@@ -112,7 +114,7 @@ measureDistance();
       
       //Move Forwards
       Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
-      Serial.println("spinning...");
+      //Serial.println("spinning...");
       
       //check Pixy
       if (pixy.ccc.numBlocks)
