@@ -10,17 +10,14 @@ int signal=26;
 int distance;
 int gap = 10;
 unsigned long pulseduration=0;
-<<<<<<< HEAD
 //**
-
-
-=======
 
 //ir sensors
 #define irLeft A4
 #define irRight A5
 int DISTANCE_CUTOFF = 3; //10cm
->>>>>>> f31f2c05e6b72a2106502092f85f905d4ed8b70a
+
+
 /*
 Motor1: LEFT
 Motor2: RIGHT
@@ -148,7 +145,6 @@ pixy.ccc.getBlocks();
           if (sig == 1)
           {
             Serial.println("Green - 180 Turn");
-            myState = back;
             if (distance<=gap){
 
 // Do this, stop motors, do 180 degrees turn
@@ -167,7 +163,6 @@ pixy.ccc.getBlocks();
           else if (sig == 2)
           {
             Serial.println("Blue - Turn Right");
-            myState = right;
 if (distance<=gap){
 
 // Do this, stop motors, turn right
@@ -186,14 +181,13 @@ if (distance<=gap){
           else if (sig == 3)
           {
             Serial.println("Red - Turn Left");
-            myState = left;
 if (distance<=gap){
 
 // stop motors, turn left
 // **********
   Motors.setSpeeds(0, 0);   
   delay(200);               // small pause for stability
-  myState = back;           // perform left turn
+  myState = left;           // perform left turn
   // **********
 
             }
@@ -213,21 +207,27 @@ if (distance<=gap){
 
     case correctLeft:
       Serial.println("left wall too close - moving right");
-
+      counter1 = 0;
       while (abs(counter1) < CORRECTION_COUNT)
       {
         Motors.setSpeeds(TURN_SPEED, 0);
         Serial.println(counter1);
-      }      
+      }
+      myState = main;
+      break;      
 
     case correctRight:
+      counter1 = 0;
       Serial.println("right wall too close - moving left");
 
       while (abs(counter2) < CORRECTION_COUNT)
       {
         Motors.setSpeeds(0, TURN_SPEED);
         Serial.println(counter2);
-      }    
+      }
+      
+      myState = main;
+      break;     
 
 
     case left:
@@ -288,57 +288,32 @@ if (distance<=gap){
       myState = main;
       break;
 
-    case search:
-      Serial.println("searching");
-      
-      isSearching = true;
-      static int searchCount = 0;
-      counter1 = 0;
-      counter2 = 0;
+case search: {
+  Serial.println("searching");
+  static int searchCount = 0;
 
-      if (pixy.ccc.numBlocks)
-      {
-        for (int i = 0; i < pixy.ccc.numBlocks; i++)
-        {
-          int sig = pixy.ccc.blocks[i].m_signature;
+  pixy.ccc.getBlocks();
 
-          Serial.print("Detected Signature: ");
-          Serial.println(sig);
-          isSearching = false;
-          searchCount = 0;
+  if (pixy.ccc.numBlocks) {
+    searchCount = 0;
+    isSearching = false;
 
-          if (sig == 1)
-          {
-            Serial.println("Green - 180 Turn");
-            myState = back;
-            break;
-          }
-          else if (sig == 2)
-          {
-            Serial.println("Blue - Turn Right");
-            myState = right;
-            break;
-          }
-          else if (sig == 3)
-          {
-            Serial.println("Red - Turn Left");
-            myState = left;
-            break;
-          }
-        }
-      }
-      else if (searchCount == 3) {
-        isSearching = false;
-        searchCount = 0;
-        myState = right;
-        break;
-      }
-      
-      else {
-        searchCount++
-        myState = right;
-        break;
-      }
+    int sig = pixy.ccc.blocks[0].m_signature;
+    myState = main;
+    break;
+  }
+
+  // no blocks seen
+  if (searchCount >= 3) {
+    searchCount = 0;
+    isSearching = false;
+    myState = main;
+  } else {
+    searchCount++;
+    myState = right;  
+  }
+  break;
+}
 
       
 
