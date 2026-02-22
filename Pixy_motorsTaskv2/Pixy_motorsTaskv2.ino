@@ -13,9 +13,9 @@ unsigned long pulseduration = 0;
 //**
 
 //ir sensors
-#define irLeft A4
-#define irRight A5
-int DISTANCE_CUTOFF = 3;  //10cm
+#define irLeft A8
+#define irRight A9
+const float DISTANCE_CUTOFF = 2.25;
 
 
 /*
@@ -34,18 +34,23 @@ volatile long counter1 = 0;
 volatile long counter2 = 0;
 
 // Motion constants
-float COUNTS_PER_REV = 12.0 * 4.0 * 13.0;
+float COUNTS_PER_REV = 12.0 * 4.0 * 10;
 float TURN_CIRC = 59.69;
 float WHEEL_CIRC_CM = 22;
 float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
 
 int TURN_SPEED = 100;
-int STRAIGHT_SPEED = 150;
+int STRAIGHT_SPEED = 90;
+int CORRECT_SPEED = 80;
 
-int CORRECTION_COUNT = 500;
+int CORRECTION_COUNT = 20;
+float correctStartTime = 0;
+float correctDelay = 5000;
 
 int SEARCH_COOLDOWN = 200000;
 bool isSearching = false;
+
+
 
 enum States {
   initialize,
@@ -92,7 +97,7 @@ void loop() {
   distance = (pulseduration / 2) * 0.0343;
 
   // Display on serial monitor
-  //Serial.print("Distance - ");
+  //Serial.println(myState);
   //Serial.print(distance);
   //Serial.println(" cm");
   delay(500);
@@ -105,7 +110,7 @@ void loop() {
       myState = main;
       break;
 
-    case main:
+    case main: {
 
       if (distance < gap-5) {
         myState = left;
@@ -113,23 +118,29 @@ void loop() {
       }
 
       //check IR Sensors
-      //float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
-      //float rightVolts = analogRead(irRight) * 0.0048828125;
+      float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
+      float rightVolts = analogRead(irRight) * 0.0048828125;
+      //Serial.print("left ");
       //Serial.println(leftVolts);
+      //Serial.print("right ");
       //Serial.println(rightVolts);
+      if (leftVolts > DISTANCE_CUTOFF && millis() - correctStartTime > correctDelay) {
+        //Serial.print("ABOVE CUT");
+        myState = correctRight;
+        Serial.print("SET STATE -> ");
+        Serial.println(myState);
+        break;
+      }
 
-      //if (leftVolts > DISTANCE_CUTOFF) {
-        //myState = correctLeft;
-        //break;
-      //}
+      if (rightVolts > DISTANCE_CUTOFF && millis() - correctStartTime > correctDelay) {
+        //Serial.print("ABOVE CUT");
+        myState = correctLeft;
+        break;
+      }
 
-      //if (rightVolts > DISTANCE_CUTOFF) {
-        //myState = correctRight;
-        //break;
-      //}
 
       //Move Forwards
-      Motors.setSpeeds(STRAIGHT_SPEED + 2, STRAIGHT_SPEED);
+      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
       //Serial.println("spinning...");
       //Serial.print("Counter1: " );
       //Serial.println(counter1);
@@ -145,7 +156,7 @@ void loop() {
           Serial.println(sig);
 
           // CASE 1
-          if (sig == 1) {
+          if (sig == 3) {
             Serial.println("Green - 180 Turn");
             if (distance <= gap) {
 
@@ -171,7 +182,7 @@ void loop() {
           }
 
           // CASE 3
-          else if (sig == 3) {
+          else if (sig == 1) {
             Serial.println("Red - Turn Left");
             if (distance <= gap) {
               Serial.println("Close!");
@@ -193,14 +204,17 @@ void loop() {
       }
 
       break;
-
+    }
 
 
     case correctLeft:
+      correctStartTime = millis();
       Serial.println("left wall too close - moving right");
       counter1 = 0;
-      while (abs(counter2) < CORRECTION_COUNT || abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(0, TURN_SPEED);
+      counter2 = 0;
+      while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
+        Motors.setSpeeds(CORRECT_SPEED, 0);
+        delay(100);
         Serial.println(counter1);
       }
       myState = main;
@@ -209,11 +223,14 @@ void loop() {
       break;
 
     case correctRight:
+      correctStartTime = millis();
       counter1 = 0;
+      counter2 = 0;
       Serial.println("right wall too close - moving left");
 
-      while (abs(counter2) < CORRECTION_COUNT || abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(TURN_SPEED, 0);
+      while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
+        Motors.setSpeeds(0, CORRECT_SPEED);
+        delay(100);
         Serial.println(counter2);
       }
 
