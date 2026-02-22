@@ -6,21 +6,21 @@ Pixy2 pixy;
 
 
 // Ultrasonic sensor code
-int signal=26;
+int signal = 26;
 int distance;
-int gap = 10;
-unsigned long pulseduration=0;
+int gap = 20;
+unsigned long pulseduration = 0;
 //**
 
 //ir sensors
 #define irLeft A4
 #define irRight A5
-int DISTANCE_CUTOFF = 3; //10cm
+int DISTANCE_CUTOFF = 3;  //10cm
 
 
 /*
-Motor1: LEFT
-Motor2: RIGHT
+Motor1: RIGHT
+Motor2: LEFT
 */
 
 // Encoder pins (consistent naming)
@@ -34,21 +34,20 @@ volatile long counter1 = 0;
 volatile long counter2 = 0;
 
 // Motion constants
-float COUNTS_PER_REV = 12.0 * 4.0 * 20.0;
-float TURN_CIRC = 100;       // MEASURE THIS //180 for now
-float WHEEL_CIRC_CM = 16;    // MEASURE THIS
+float COUNTS_PER_REV = 12.0 * 4.0 * 13.0;
+float TURN_CIRC = 59.69;
+float WHEEL_CIRC_CM = 22;
 float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
 
-int TURN_SPEED = 50;
-int STRAIGHT_SPEED = 100;
+int TURN_SPEED = 100;
+int STRAIGHT_SPEED = 150;
 
 int CORRECTION_COUNT = 500;
 
-int SEARCH_COOLDOWN = 1000;
+int SEARCH_COOLDOWN = 20000;
 bool isSearching = false;
 
-enum States
-{
+enum States {
   initialize,
   main,
   correctLeft,
@@ -61,18 +60,17 @@ enum States
 
 States myState = initialize;
 
-void setup()
-{
+void setup() {
 
-//** ultrasonic sensor
+  //** ultrasonic sensor
+  delay(5000);
+  pinMode(signal, OUTPUT);
 
- pinMode(signal, OUTPUT);
-
-//**
+  //**
 
   Motors.enableDrivers();
 
-  Serial.begin(115200);
+  Serial.begin(9600);
   pixy.init();
   Serial.println("Pixy Initialized...");
 
@@ -87,116 +85,115 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(Motor2EPinB), changeUp2B, CHANGE);
 }
 
-void loop()
-{
-//**
-//Get the raw distance measurement value
-measureDistance();
- distance = (pulseduration / 2) * 0.0343;
+void loop() {
+  //**
+  //Get the raw distance measurement value
+  measureDistance();
+  distance = (pulseduration / 2) * 0.0343;
 
-// Display on serial monitor
- Serial.print("Distance - ");
- Serial.print(distance);
- Serial.println(" cm");
- delay(500);
-//**
+  // Display on serial monitor
+  //Serial.print("Distance - ");
+  //Serial.print(distance);
+  //Serial.println(" cm");
+  delay(500);
+  //**
 
-pixy.ccc.getBlocks();
+  pixy.ccc.getBlocks();
 
-  switch (myState)
-  {
+  switch (myState) {
     case initialize:
       myState = main;
       break;
 
     case main:
-      
+
+      if (distance < gap) {
+        myState = left;
+        break;
+      }
+
       //check IR Sensors
-      float leftVolts = analogRead(irLeft)*0.0048828125; // value from sensor * (5/1024)
-      float rightVolts = analogRead(irRight)*0.0048828125;
-      Serial.println("leftVolts");
-      Serial.println("rightVolts");
+      //float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
+      //float rightVolts = analogRead(irRight) * 0.0048828125;
+      //Serial.println(leftVolts);
+      //Serial.println(rightVolts);
 
-      if (leftVolts > DISTANCE_CUTOFF){
-        myState = correctLeft;
-        break;
-      }
+      //if (leftVolts > DISTANCE_CUTOFF) {
+        //myState = correctLeft;
+        //break;
+      //}
 
-      if (rightVolts > DISTANCE_CUTOFF){
-        myState = correctRight;
-        break;
-      }
-      
+      //if (rightVolts > DISTANCE_CUTOFF) {
+        //myState = correctRight;
+        //break;
+      //}
+
       //Move Forwards
-      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
+      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED + 1);
       //Serial.println("spinning...");
-      
+      Serial.print("Counter1: " );
+      Serial.println(counter1);
+      Serial.print("Counter2: " );
+      Serial.println(counter2);
+
       //check Pixy
-      if (pixy.ccc.numBlocks)
-      {
-        for (int i = 0; i < pixy.ccc.numBlocks; i++)
-        {
+      if (pixy.ccc.numBlocks) {
+        for (int i = 0; i < pixy.ccc.numBlocks; i++) {
           int sig = pixy.ccc.blocks[i].m_signature;
 
           Serial.print("Detected Signature: ");
           Serial.println(sig);
 
-// CASE 1
-          if (sig == 1)
-          {
+          // CASE 1
+          if (sig == 1) {
             Serial.println("Green - 180 Turn");
-            if (distance<=gap){
+            if (distance <= gap) {
 
-// Do this, stop motors, do 180 degrees turn
-// **********
-  Motors.setSpeeds(0, 0);   
-  delay(200);               // small pause for stability
-  myState = back;           // perform 180 turn
-  // **********
-
+              // Do this, stop motors, do 180 degrees turn
+              Motors.setSpeeds(0, 0);
+              delay(200);
+              myState = back;
             }
 
             break;
           }
 
-// CASE 2
-          else if (sig == 2)
-          {
+          // CASE 2
+          else if (sig == 2) {
             Serial.println("Blue - Turn Right");
-if (distance<=gap){
+            if (distance <= gap) {
 
-// Do this, stop motors, turn right
-// **********
-  Motors.setSpeeds(0, 0);   
-  delay(200);               //stability
-  myState = right;           // turn right
-  // **********
-
+              // Do this, stop motors, turn right
+              // **********
+              Motors.setSpeeds(0, 0);
+              delay(200);       //stability
+              myState = right;  // turn right
+                                // **********
             }
 
             break;
           }
 
-// CASE 3
-          else if (sig == 3)
-          {
+          // CASE 3
+          else if (sig == 3) {
             Serial.println("Red - Turn Left");
-if (distance<=gap){
-
-// stop motors, turn left
-// **********
-  Motors.setSpeeds(0, 0);   
-  delay(200);               // small pause for stability
-  myState = left;           // perform left turn
-  // **********
-
+            if (distance <= gap) {
+              Serial.println("Close!");
+              // stop motors, turn left
+              // **********
+              Motors.setSpeeds(0, 0);
+              delay(200);      // small pause for stability
+              myState = left;  // perform left turn
+              //Serial.println(myState);
+              break;
+                               // **********
             }
 
-            break;
+            
           }
         }
       }
-      if (counter1 > SEARCH_COOLDOWN) {
+      if (abs(counter1) > SEARCH_COOLDOWN) {
         myState = search;
         break;
       }
@@ -208,26 +205,24 @@ if (distance<=gap){
     case correctLeft:
       Serial.println("left wall too close - moving right");
       counter1 = 0;
-      while (abs(counter1) < CORRECTION_COUNT)
-      {
-        Motors.setSpeeds(TURN_SPEED, 0);
+      while (abs(counter2) < CORRECTION_COUNT || abs(counter1) < CORRECTION_COUNT) {
+        Motors.setSpeeds(0, TURN_SPEED);
         Serial.println(counter1);
       }
       myState = main;
-      break;      
+      break;
 
     case correctRight:
       counter1 = 0;
       Serial.println("right wall too close - moving left");
 
-      while (abs(counter2) < CORRECTION_COUNT)
-      {
-        Motors.setSpeeds(0, TURN_SPEED);
+      while (abs(counter2) < CORRECTION_COUNT || abs(counter1) < CORRECTION_COUNT) {
+        Motors.setSpeeds(TURN_SPEED, 0);
         Serial.println(counter2);
       }
-      
+
       myState = main;
-      break;     
+      break;
 
 
     case left:
@@ -235,92 +230,88 @@ if (distance<=gap){
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < 0.5 * FULL_ROTATION_COUNTS)
-      {
-        Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+      while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
+        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
         Serial.println(counter1);
       }
 
-      Motors.setSpeeds(0, 0);   // STOP
+      Motors.setSpeeds(0, 0);  // STOP
       myState = main;
       break;
 
 
 
-    
-    
+
+
     case right:
       Serial.println("turning right");
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < 0.5 * FULL_ROTATION_COUNTS)
-      {
-        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+      while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
+        Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
         Serial.println(counter1);
       }
 
-      Motors.setSpeeds(0, 0);   // STOP
-      
-      if (isSearching){
+      Motors.setSpeeds(0, 0);  // STOP
+
+      if (isSearching) {
         myState = search;
         break;
-      }
-      else {
+      } else {
         myState = main;
         break;
       }
 
-    
-    
+
+
     case back:
       Serial.println("turning around");
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < FULL_ROTATION_COUNTS)
-      {
+      while (abs(counter1) < FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
         Serial.println(counter1);
       }
 
-      Motors.setSpeeds(0, 0);   // STOP
+      Motors.setSpeeds(0, 0);  // STOP
       myState = main;
       break;
 
-case search: {
-  Serial.println("searching");
-  static int searchCount = 0;
+    case search:
+      {
+        Serial.println("searching");
+        static int searchCount = 0;
 
-  pixy.ccc.getBlocks();
+        pixy.ccc.getBlocks();
 
-  if (pixy.ccc.numBlocks) {
-    searchCount = 0;
-    isSearching = false;
+        if (pixy.ccc.numBlocks) {
+          searchCount = 0;
+          isSearching = false;
 
-    int sig = pixy.ccc.blocks[0].m_signature;
-    myState = main;
-    break;
-  }
+          int sig = pixy.ccc.blocks[0].m_signature;
+          myState = main;
+          break;
+        }
 
-  // no blocks seen
-  if (searchCount >= 3) {
-    searchCount = 0;
-    isSearching = false;
-    myState = main;
-  } else {
-    searchCount++;
-    myState = right;  
-  }
-  break;
-}
+        // no blocks seen
+        if (searchCount >= 3) {
+          searchCount = 0;
+          isSearching = false;
+          myState = main;
+        } else {
+          searchCount++;
+          myState = right;
+        }
+        break;
+      }
 
-      
+
 
     default:
       Serial.println("Error!");
       break;
-    
   }
 }
 
@@ -328,32 +319,28 @@ case search: {
 // INTERRUPT ROUTINES
 // ======================
 
-void changeUp1A()
-{
+void changeUp1A() {
   if (digitalRead(Motor1EPinA) == digitalRead(Motor1EPinB))
     counter1++;
   else
     counter1--;
 }
 
-void changeUp1B()
-{
+void changeUp1B() {
   if (digitalRead(Motor1EPinA) == digitalRead(Motor1EPinB))
     counter1--;
   else
     counter1++;
 }
 
-void changeUp2A()
-{
+void changeUp2A() {
   if (digitalRead(Motor2EPinA) == digitalRead(Motor2EPinB))
     counter2++;
   else
     counter2--;
 }
 
-void changeUp2B()
-{
+void changeUp2B() {
   if (digitalRead(Motor2EPinA) == digitalRead(Motor2EPinB))
     counter2--;
   else
@@ -362,25 +349,24 @@ void changeUp2B()
 
 //**
 // ultrasonic sensor distance measuring function
-void measureDistance()
-{
- // set pin as output so we can send a pulse
- pinMode(signal, OUTPUT);
-// set output to LOW
- digitalWrite(signal, LOW);
- delayMicroseconds(5);
- 
- // now send the 5uS pulse out to activate Ping)))
- digitalWrite(signal, HIGH);
- delayMicroseconds(5);
- digitalWrite(signal, LOW);
- 
- // now we need to change the digital pin
- // to input to read the incoming pulse
- pinMode(signal, INPUT);
- 
- // finally, measure the length of the incoming pulse
- pulseduration = pulseIn(signal, HIGH);
+void measureDistance() {
+  // set pin as output so we can send a pulse
+  pinMode(signal, OUTPUT);
+  // set output to LOW
+  digitalWrite(signal, LOW);
+  delayMicroseconds(5);
+
+  // now send the 5uS pulse out to activate Ping)))
+  digitalWrite(signal, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(signal, LOW);
+
+  // now we need to change the digital pin
+  // to input to read the incoming pulse
+  pinMode(signal, INPUT);
+
+  // finally, measure the length of the incoming pulse
+  pulseduration = pulseIn(signal, HIGH);
 }
 
 //**
