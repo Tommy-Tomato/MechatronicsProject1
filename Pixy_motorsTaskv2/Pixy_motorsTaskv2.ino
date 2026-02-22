@@ -1,5 +1,4 @@
-###
-##include <DualMAX14870MotorShield.h>
+#include <DualMAX14870MotorShield.h>
 #include <Pixy2.h>
 
 DualMAX14870MotorShield Motors;
@@ -7,10 +6,10 @@ Pixy2 pixy;
 
 //**
 // Ultrasonic sensor code
-int signal=8;
+int signal=26;
 int distance;
+int gap = 10;
 unsigned long pulseduration=0;
-
 //**
 
 
@@ -64,7 +63,7 @@ void setup()
 
   Motors.enableDrivers();
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   pixy.init();
   Serial.println("Pixy Initialized...");
 
@@ -84,9 +83,16 @@ void loop()
 //**
 //Get the raw distance measurement value
 measureDistance();
+ distance = (pulseduration / 2) * 0.0343;
+
+// Display on serial monitor
+ Serial.print("Distance - ");
+ Serial.print(distance);
+ Serial.println(" cm");
+ delay(500);
 //**
 
-  pixy.ccc.getBlocks();
+pixy.ccc.getBlocks();
 
   switch (myState)
   {
@@ -106,22 +112,57 @@ measureDistance();
           Serial.print("Detected Signature: ");
           Serial.println(sig);
 
+// CASE 1
           if (sig == 1)
           {
             Serial.println("Green - 180 Turn");
             myState = back;
+            if (distance<=gap){
+// Do this, stop motors, do 180 degrees turn
+// **********
+  Motors.setSpeeds(0, 0);   
+  delay(200);               // small pause for stability
+  myState = back;           // perform 180 turn
+  // **********
+
+            }
+
             break;
           }
+
+// CASE 2
           else if (sig == 2)
           {
             Serial.println("Blue - Turn Right");
             myState = right;
+if (distance<=gap){
+// Do this, stop motors, turn right
+// **********
+  Motors.setSpeeds(0, 0);   
+  delay(200);               //stability
+  myState = right;           // turn right
+  // **********
+
+            }
+
             break;
           }
+
+// CASE 3
           else if (sig == 3)
           {
             Serial.println("Red - Turn Left");
             myState = left;
+if (distance<=gap){
+// stop motors, turn left
+// **********
+  Motors.setSpeeds(0, 0);   
+  delay(200);               // small pause for stability
+  myState = back;           // perform left turn
+  // **********
+
+            }
+
             break;
           }
         }
@@ -131,7 +172,7 @@ measureDistance();
 
 
     case correctLeft:
-      Serial.println("left wall too close - moving right")
+      Serial.println("left wall too close - moving right");
 
       while (abs(counter1) < CORRECTION_COUNT)
       {
@@ -140,7 +181,7 @@ measureDistance();
       }      
 
     case correctRight:
-      Serial.println("right wall too close - moving left")
+      Serial.println("right wall too close - moving left");
 
       while (abs(counter2) < CORRECTION_COUNT)
       {
@@ -201,6 +242,7 @@ measureDistance();
     default:
       Serial.println("Error!");
       break;
+    
   }
 }
 
