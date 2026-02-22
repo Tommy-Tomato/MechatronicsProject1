@@ -44,7 +44,7 @@ int STRAIGHT_SPEED = 150;
 
 int CORRECTION_COUNT = 500;
 
-int SEARCH_COOLDOWN = 20000;
+int SEARCH_COOLDOWN = 200000;
 bool isSearching = false;
 
 enum States {
@@ -107,7 +107,7 @@ void loop() {
 
     case main:
 
-      if (distance < gap) {
+      if (distance < gap-5) {
         myState = left;
         break;
       }
@@ -129,12 +129,12 @@ void loop() {
       //}
 
       //Move Forwards
-      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED + 1);
+      Motors.setSpeeds(STRAIGHT_SPEED + 2, STRAIGHT_SPEED);
       //Serial.println("spinning...");
-      Serial.print("Counter1: " );
-      Serial.println(counter1);
-      Serial.print("Counter2: " );
-      Serial.println(counter2);
+      //Serial.print("Counter1: " );
+      //Serial.println(counter1);
+      //Serial.print("Counter2: " );
+      //Serial.println(counter2);
 
       //check Pixy
       if (pixy.ccc.numBlocks) {
@@ -154,8 +154,7 @@ void loop() {
               delay(200);
               myState = back;
             }
-
-            break;
+          break;
           }
 
           // CASE 2
@@ -164,14 +163,11 @@ void loop() {
             if (distance <= gap) {
 
               // Do this, stop motors, turn right
-              // **********
               Motors.setSpeeds(0, 0);
               delay(200);       //stability
               myState = right;  // turn right
-                                // **********
             }
-
-            break;
+          break;
           }
 
           // CASE 3
@@ -180,22 +176,20 @@ void loop() {
             if (distance <= gap) {
               Serial.println("Close!");
               // stop motors, turn left
-              // **********
+
               Motors.setSpeeds(0, 0);
               delay(200);      // small pause for stability
               myState = left;  // perform left turn
               //Serial.println(myState);
-              break;
-                               // **********
             }
-
+          break;
             
           }
         }
       }
       if (abs(counter1) > SEARCH_COOLDOWN) {
-        myState = search;
-        break;
+        //myState = search;
+        //break;
       }
 
       break;
@@ -210,6 +204,8 @@ void loop() {
         Serial.println(counter1);
       }
       myState = main;
+      counter1 = 0;
+      counter2 = 0;
       break;
 
     case correctRight:
@@ -222,6 +218,8 @@ void loop() {
       }
 
       myState = main;
+      counter1 = 0;
+      counter2 = 0;
       break;
 
 
@@ -231,12 +229,14 @@ void loop() {
       counter2 = 0;
 
       while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
-        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        Serial.println(counter1);
+        Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
+        //Serial.println(counter1);
       }
 
       Motors.setSpeeds(0, 0);  // STOP
       myState = main;
+      counter1 = 0;
+      counter2 = 0;
       break;
 
 
@@ -249,8 +249,8 @@ void loop() {
       counter2 = 0;
 
       while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
-        Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-        Serial.println(counter1);
+        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
+        //Serial.println(counter1);
       }
 
       Motors.setSpeeds(0, 0);  // STOP
@@ -260,6 +260,8 @@ void loop() {
         break;
       } else {
         myState = main;
+        counter1 = 0;
+        counter2 = 0;
         break;
       }
 
@@ -272,11 +274,13 @@ void loop() {
 
       while (abs(counter1) < FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        Serial.println(counter1);
+        //Serial.println(counter1);
       }
 
       Motors.setSpeeds(0, 0);  // STOP
       myState = main;
+      counter1 = 0;
+      counter2 = 0;
       break;
 
     case search:
