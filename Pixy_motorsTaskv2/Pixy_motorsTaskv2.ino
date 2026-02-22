@@ -47,6 +47,9 @@ int STRAIGHT_SPEED = 100;
 
 int CORRECTION_COUNT = 500;
 
+int SEARCH_COOLDOWN = 1000;
+bool isSearching = false;
+
 enum States
 {
   initialize,
@@ -55,7 +58,8 @@ enum States
   correctRight,
   left,
   right,
-  back
+  back,
+  search
 };
 
 States myState = initialize;
@@ -198,6 +202,11 @@ if (distance<=gap){
           }
         }
       }
+      if (counter1 > SEARCH_COOLDOWN) {
+        myState = search;
+        break;
+      }
+
       break;
 
 
@@ -236,6 +245,8 @@ if (distance<=gap){
       myState = main;
       break;
 
+
+
     
     
     case right:
@@ -250,8 +261,15 @@ if (distance<=gap){
       }
 
       Motors.setSpeeds(0, 0);   // STOP
-      myState = main;
-      break;
+      
+      if (isSearching){
+        myState = search;
+        break;
+      }
+      else {
+        myState = main;
+        break;
+      }
 
     
     
@@ -269,6 +287,60 @@ if (distance<=gap){
       Motors.setSpeeds(0, 0);   // STOP
       myState = main;
       break;
+
+    case search:
+      Serial.println("searching");
+      
+      isSearching = true;
+      static int searchCount = 0;
+      counter1 = 0;
+      counter2 = 0;
+
+      if (pixy.ccc.numBlocks)
+      {
+        for (int i = 0; i < pixy.ccc.numBlocks; i++)
+        {
+          int sig = pixy.ccc.blocks[i].m_signature;
+
+          Serial.print("Detected Signature: ");
+          Serial.println(sig);
+          isSearching = false;
+          searchCount = 0;
+
+          if (sig == 1)
+          {
+            Serial.println("Green - 180 Turn");
+            myState = back;
+            break;
+          }
+          else if (sig == 2)
+          {
+            Serial.println("Blue - Turn Right");
+            myState = right;
+            break;
+          }
+          else if (sig == 3)
+          {
+            Serial.println("Red - Turn Left");
+            myState = left;
+            break;
+          }
+        }
+      }
+      else if (searchCount == 3) {
+        isSearching = false;
+        searchCount = 0;
+        myState = right;
+        break;
+      }
+      
+      else {
+        searchCount++
+        myState = right;
+        break;
+      }
+
+      
 
     default:
       Serial.println("Error!");
