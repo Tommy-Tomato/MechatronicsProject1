@@ -4,15 +4,23 @@
 DualMAX14870MotorShield Motors;
 Pixy2 pixy;
 
-//**
+
 // Ultrasonic sensor code
 int signal=26;
 int distance;
 int gap = 10;
 unsigned long pulseduration=0;
+<<<<<<< HEAD
 //**
 
 
+=======
+
+//ir sensors
+#define irLeft A4
+#define irRight A5
+int DISTANCE_CUTOFF = 3; //10cm
+>>>>>>> f31f2c05e6b72a2106502092f85f905d4ed8b70a
 /*
 Motor1: LEFT
 Motor2: RIGHT
@@ -101,8 +109,28 @@ pixy.ccc.getBlocks();
       break;
 
     case main:
+      
+      //check IR Sensors
+      float leftVolts = analogRead(irLeft)*0.0048828125; // value from sensor * (5/1024)
+      float rightVolts = analogRead(irRight)*0.0048828125;
+      Serial.println("leftVolts");
+      Serial.println("rightVolts");
+
+      if (leftVolts > DISTANCE_CUTOFF){
+        myState = correctLeft;
+        break;
+      }
+
+      if (rightVolts > DISTANCE_CUTOFF){
+        myState = correctRight;
+        break;
+      }
+      
+      //Move Forwards
       Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
-      Serial.println("spinning...");
+      //Serial.println("spinning...");
+      
+      //check Pixy
       if (pixy.ccc.numBlocks)
       {
         for (int i = 0; i < pixy.ccc.numBlocks; i++)
@@ -118,6 +146,7 @@ pixy.ccc.getBlocks();
             Serial.println("Green - 180 Turn");
             myState = back;
             if (distance<=gap){
+
 // Do this, stop motors, do 180 degrees turn
 // **********
   Motors.setSpeeds(0, 0);   
@@ -136,6 +165,7 @@ pixy.ccc.getBlocks();
             Serial.println("Blue - Turn Right");
             myState = right;
 if (distance<=gap){
+
 // Do this, stop motors, turn right
 // **********
   Motors.setSpeeds(0, 0);   
@@ -154,6 +184,7 @@ if (distance<=gap){
             Serial.println("Red - Turn Left");
             myState = left;
 if (distance<=gap){
+
 // stop motors, turn left
 // **********
   Motors.setSpeeds(0, 0);   
