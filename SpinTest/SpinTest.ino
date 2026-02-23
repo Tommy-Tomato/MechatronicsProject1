@@ -19,7 +19,7 @@ volatile long counter2 = 0;  // LEFT encoder count
 // =======================
 // Motion + geometry constants (from your code)
 // =======================
-float COUNTS_PER_REV = 12.0 * 4.0 * 10.0; // adjust gear ratio if needed
+float COUNTS_PER_REV = 12.0 * 4.0 * 10.15 *0.25; // adjust gear ratio if needed
 float TURN_CIRC = 59.69;                  // cm (robot turn circumference)
 float WHEEL_CIRC_CM = 22.0;               // cm (wheel circumference)
 

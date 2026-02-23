@@ -8,7 +8,7 @@ Pixy2 pixy;
 // Ultrasonic sensor code
 int signal = 26;
 int distance;
-int gap = 20;
+int gap = 23;
 unsigned long pulseduration = 0;
 //**
 
@@ -34,14 +34,14 @@ volatile long counter1 = 0;
 volatile long counter2 = 0;
 
 // Motion constants
-float COUNTS_PER_REV = 12.0 * 4.0 * 10;
+float COUNTS_PER_REV = 12.0 * 4.0 * 9.8;
 float TURN_CIRC = 59.69;
 float WHEEL_CIRC_CM = 22;
 float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
 
-int TURN_SPEED = 100;
+int TURN_SPEED = 80;
 int STRAIGHT_SPEED = 90;
-int CORRECT_SPEED = 80;
+int CORRECT_SPEED = 85;
 
 int CORRECTION_COUNT = 20;
 float correctStartTime = 0;
@@ -112,10 +112,10 @@ void loop() {
 
     case main: {
 
-      if (distance < gap-5) {
-        myState = left;
-        break;
-      }
+      //if (distance < gap-5) {
+        //myState = left;
+        //break;
+      //}
 
       //check IR Sensors
       float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
@@ -140,7 +140,7 @@ void loop() {
 
 
       //Move Forwards
-      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED);
+      Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED + 1);
       //Serial.println("spinning...");
       //Serial.print("Counter1: " );
       //Serial.println(counter1);
@@ -213,7 +213,7 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
       while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(CORRECT_SPEED, 0);
+        Motors.setSpeeds(0, -CORRECT_SPEED);
         delay(100);
         Serial.println(counter1);
       }
@@ -229,7 +229,7 @@ void loop() {
       Serial.println("right wall too close - moving left");
 
       while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(0, CORRECT_SPEED);
+        Motors.setSpeeds(-CORRECT_SPEED, 0);
         delay(100);
         Serial.println(counter2);
       }
@@ -245,9 +245,9 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
+      while (abs(counter1) < 0.2 * FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-        //Serial.println(counter1);
+        Serial.println(counter1);
       }
 
       Motors.setSpeeds(0, 0);  // STOP
@@ -265,9 +265,9 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < 0.25 * FULL_ROTATION_COUNTS) {
+      while (abs(counter2) < 0.2 * FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        //Serial.println(counter1);
+        Serial.println(counter1);
       }
 
       Motors.setSpeeds(0, 0);  // STOP
@@ -289,7 +289,7 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < FULL_ROTATION_COUNTS) {
+      while (abs(counter1) < 0.4 * FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
         //Serial.println(counter1);
       }
