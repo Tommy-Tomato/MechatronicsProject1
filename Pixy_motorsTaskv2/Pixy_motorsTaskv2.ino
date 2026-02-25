@@ -8,14 +8,14 @@ Pixy2 pixy;
 // Ultrasonic sensor code
 int signal = 26;
 int distance;
-int gap = 23;
+int gap = 25;
 unsigned long pulseduration = 0;
 //**
 
 //ir sensors
 #define irLeft A8
 #define irRight A9
-const float DISTANCE_CUTOFF = 2.25;
+const float DISTANCE_CUTOFF = 2.8;
 
 
 /*
@@ -34,12 +34,12 @@ volatile long counter1 = 0;
 volatile long counter2 = 0;
 
 // Motion constants
-float COUNTS_PER_REV = 12.0 * 4.0 * 9.8;
+float COUNTS_PER_REV = 12.0 * 4.0 * 9.75;
 float TURN_CIRC = 59.69;
 float WHEEL_CIRC_CM = 22;
 float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
 
-int TURN_SPEED = 80;
+int TURN_SPEED = 150;
 int STRAIGHT_SPEED = 90;
 int CORRECT_SPEED = 85;
 
@@ -47,8 +47,9 @@ int CORRECTION_COUNT = 20;
 float correctStartTime = 0;
 float correctDelay = 5000;
 
-int SEARCH_COOLDOWN = 200000;
+int SEARCH_COOLDOWN = 2000;
 bool isSearching = false;
+double WALL_CUTOFF = 1.5;
 
 
 
@@ -59,8 +60,7 @@ enum States {
   correctRight,
   left,
   right,
-  back,
-  search
+  back
 };
 
 States myState = initialize;
@@ -95,6 +95,7 @@ void loop() {
   //Get the raw distance measurement value
   measureDistance();
   distance = (pulseduration / 2) * 0.0343;
+  long startTime = millis();
 
   // Display on serial monitor
   //Serial.println(myState);
@@ -149,6 +150,7 @@ void loop() {
 
       //check Pixy
       if (pixy.ccc.numBlocks) {
+        isSearching = false;
         for (int i = 0; i < pixy.ccc.numBlocks; i++) {
           int sig = pixy.ccc.blocks[i].m_signature;
 
@@ -197,9 +199,22 @@ void loop() {
             
           }
         }
+      } else if (isSearching) {
+          if (leftVolts < WALL_CUTOFF) {
+            myState = left;
+            break;
+          }
+
+          if (rightVolts < WALL_CUTOFF) {
+            myState = right;
+            break;
+          }
+        
       }
-      if (abs(counter1) > SEARCH_COOLDOWN) {
+      //activate search after cooldown
+      if (millis()-startTime > SEARCH_COOLDOWN) {
         //myState = search;
+        isSearching = true;
         //break;
       }
 
@@ -272,15 +287,12 @@ void loop() {
 
       Motors.setSpeeds(0, 0);  // STOP
 
-      if (isSearching) {
-        myState = search;
-        break;
-      } else {
+      
         myState = main;
         counter1 = 0;
         counter2 = 0;
         break;
-      }
+
 
 
 
@@ -289,7 +301,7 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
 
-      while (abs(counter1) < 0.4 * FULL_ROTATION_COUNTS) {
+      while (abs(counter1) < 0.5 * FULL_ROTATION_COUNTS) {
         Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
         //Serial.println(counter1);
       }
@@ -299,34 +311,6 @@ void loop() {
       counter1 = 0;
       counter2 = 0;
       break;
-
-    case search:
-      {
-        Serial.println("searching");
-        static int searchCount = 0;
-
-        pixy.ccc.getBlocks();
-
-        if (pixy.ccc.numBlocks) {
-          searchCount = 0;
-          isSearching = false;
-
-          int sig = pixy.ccc.blocks[0].m_signature;
-          myState = main;
-          break;
-        }
-
-        // no blocks seen
-        if (searchCount >= 3) {
-          searchCount = 0;
-          isSearching = false;
-          myState = main;
-        } else {
-          searchCount++;
-          myState = right;
-        }
-        break;
-      }
 
 
 
