@@ -8,7 +8,7 @@ Pixy2 pixy;
 // Ultrasonic sensor code
 int signal = 26;
 int distance;
-int gap = 25;
+int gap = 27;
 unsigned long pulseduration = 0;
 //**
 
@@ -47,9 +47,11 @@ int CORRECTION_COUNT = 20;
 float correctStartTime = 0;
 float correctDelay = 5000;
 
-int SEARCH_COOLDOWN = 2000;
+int SEARCH_COOLDOWN = 5000;
 bool isSearching = false;
 double WALL_CUTOFF = 1.5;
+
+long startTime = millis();
 
 
 
@@ -88,6 +90,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(Motor1EPinB), changeUp1B, CHANGE);
   attachInterrupt(digitalPinToInterrupt(Motor2EPinA), changeUp2A, CHANGE);
   attachInterrupt(digitalPinToInterrupt(Motor2EPinB), changeUp2B, CHANGE);
+
+
 }
 
 void loop() {
@@ -95,7 +99,7 @@ void loop() {
   //Get the raw distance measurement value
   measureDistance();
   distance = (pulseduration / 2) * 0.0343;
-  long startTime = millis();
+
 
   // Display on serial monitor
   //Serial.println(myState);
@@ -151,6 +155,7 @@ void loop() {
       //check Pixy
       if (pixy.ccc.numBlocks) {
         isSearching = false;
+        startTime = millis();
         for (int i = 0; i < pixy.ccc.numBlocks; i++) {
           int sig = pixy.ccc.blocks[i].m_signature;
 
@@ -201,18 +206,20 @@ void loop() {
         }
       } else if (isSearching) {
           if (leftVolts < WALL_CUTOFF) {
-            myState = left;
+            myState = right;
             break;
           }
 
           if (rightVolts < WALL_CUTOFF) {
-            myState = right;
+            myState = left;
             break;
           }
         
       }
       //activate search after cooldown
+      Serial.println(millis()-startTime);
       if (millis()-startTime > SEARCH_COOLDOWN) {
+        Serial.println("SEARCHING");
         //myState = search;
         isSearching = true;
         //break;
@@ -257,6 +264,8 @@ void loop() {
 
     case left:
       Serial.println("turning left");
+      startTime = millis();
+      isSearching = false;
       counter1 = 0;
       counter2 = 0;
 
@@ -276,6 +285,8 @@ void loop() {
 
 
     case right:
+      startTime = millis();
+      isSearching = false;
       Serial.println("turning right");
       counter1 = 0;
       counter2 = 0;
@@ -297,6 +308,8 @@ void loop() {
 
 
     case back:
+      startTime = millis();
+      isSearching = false;
       Serial.println("turning around");
       counter1 = 0;
       counter2 = 0;
