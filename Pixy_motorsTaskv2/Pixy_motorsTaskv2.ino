@@ -10,7 +10,6 @@ int signal = 26;
 int distance;
 int gap = 27;
 unsigned long pulseduration = 0;
-//**
 
 //ir sensors
 #define irLeft A8
@@ -54,7 +53,6 @@ double WALL_CUTOFF = 1.5;
 long startTime = millis();
 
 
-
 enum States {
   initialize,
   main,
@@ -69,18 +67,19 @@ States myState = initialize;
 
 void setup() {
 
-  //** ultrasonic sensor
+  // ultrasonic sensor setup
   delay(5000);
   pinMode(signal, OUTPUT);
 
-  //**
-
+  //motor setup
   Motors.enableDrivers();
 
+  //pixy setup
   Serial.begin(9600);
   pixy.init();
   Serial.println("Pixy Initialized...");
 
+  //initializing motor pins & attaching interrupts
   pinMode(Motor1EPinA, INPUT_PULLUP);
   pinMode(Motor1EPinB, INPUT_PULLUP);
   pinMode(Motor2EPinA, INPUT_PULLUP);
@@ -95,19 +94,12 @@ void setup() {
 }
 
 void loop() {
-  //**
   //Get the raw distance measurement value
   measureDistance();
   distance = (pulseduration / 2) * 0.0343;
-
-
-  // Display on serial monitor
-  //Serial.println(myState);
-  //Serial.print(distance);
-  //Serial.println(" cm");
   delay(500);
-  //**
 
+  //retrieve pixy info  
   pixy.ccc.getBlocks();
 
   switch (myState) {
@@ -115,20 +107,16 @@ void loop() {
       myState = main;
       break;
 
+    /*
+    Main Case: Arduino drives forwards and monitors sensors
+    After cooldown, activates sensing mode
+    */
     case main: {
-
-      //if (distance < gap-5) {
-        //myState = left;
-        //break;
-      //}
 
       //check IR Sensors
       float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
       float rightVolts = analogRead(irRight) * 0.0048828125;
-      //Serial.print("left ");
-      //Serial.println(leftVolts);
-      //Serial.print("right ");
-      //Serial.println(rightVolts);
+
       if (leftVolts > DISTANCE_CUTOFF && millis() - correctStartTime > correctDelay) {
         //Serial.print("ABOVE CUT");
         myState = correctRight;
@@ -143,14 +131,8 @@ void loop() {
         break;
       }
 
-
       //Move Forwards
       Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED + 1);
-      //Serial.println("spinning...");
-      //Serial.print("Counter1: " );
-      //Serial.println(counter1);
-      //Serial.print("Counter2: " );
-      //Serial.println(counter2);
 
       //check Pixy
       if (pixy.ccc.numBlocks) {
@@ -196,20 +178,21 @@ void loop() {
               // stop motors, turn left
 
               Motors.setSpeeds(0, 0);
-              delay(200);      // small pause for stability
-              myState = left;  // perform left turn
-              //Serial.println(myState);
+              delay(200);      // stability
+              myState = left;  // left turn
             }
           break;
             
           }
         }
+        //if Robot is in searching mode
       } else if (isSearching) {
+          //if right wall too far away, turn right
           if (leftVolts < WALL_CUTOFF) {
             myState = right;
             break;
           }
-
+          //if left wall too far away, turn left
           if (rightVolts < WALL_CUTOFF) {
             myState = left;
             break;
@@ -220,15 +203,15 @@ void loop() {
       Serial.println(millis()-startTime);
       if (millis()-startTime > SEARCH_COOLDOWN) {
         Serial.println("SEARCHING");
-        //myState = search;
         isSearching = true;
-        //break;
       }
 
       break;
     }
 
-
+    /*
+    correctLeft case: robot corrects to the right
+    */
     case correctLeft:
       correctStartTime = millis();
       Serial.println("left wall too close - moving right");
@@ -244,6 +227,9 @@ void loop() {
       counter2 = 0;
       break;
 
+    /*
+    correctRight case: robot corrects to the left
+    */
     case correctRight:
       correctStartTime = millis();
       counter1 = 0;
@@ -261,7 +247,9 @@ void loop() {
       counter2 = 0;
       break;
 
-
+    /*
+    Left case: robot turns left
+    */
     case left:
       Serial.println("turning left");
       startTime = millis();
@@ -284,6 +272,9 @@ void loop() {
 
 
 
+    /*
+    Right case: robot turns right
+    */
     case right:
       startTime = millis();
       isSearching = false;
@@ -307,6 +298,9 @@ void loop() {
 
 
 
+    /*
+    Back case: robot turns around
+    */
     case back:
       startTime = millis();
       isSearching = false;
