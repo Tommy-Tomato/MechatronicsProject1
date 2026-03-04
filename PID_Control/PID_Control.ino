@@ -23,12 +23,11 @@ unsigned long lastTime = 0;
 //IMU configs
 #include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
 #include <Wire.h>
-
 struct bno055_t myBNO;
 struct bno055_euler myEulerData; //Structure to hold the Euler data
  float yaw;
-    float pitch;
-    float roll;
+ float pitch;
+ float roll;
 //
 
 
@@ -76,29 +75,7 @@ void loop() {
 double readPosition() {
   // Implement sensor reading
 
- // Changed from 100ms to 20ms for a 50Hz refresh rate
-// Placeholder function to apply output
-void applyOutput(double output) {
-  int outputInt = (int)output; 
-  int outputSpeed = map(outputInt,0,360,-400,400);
-  Motors.setSpeeds(outputSpeed, -outputSpeed);
-  
-}
-
-
-
-#include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
-#include <Wire.h>
-
-struct bno055_t myBNO;
-struct bno055_euler myEulerData; //Structure to hold the Euler data
-
-unsigned long lastTime = 0;
-
-
-void myIMU() 
-{
-  // Changed from 100ms to 20ms for a 50Hz refresh rate
+// Changed from 100ms to 20ms for a 50Hz refresh rate
   if ((millis() - lastTime) >= 20) 
   {
     lastTime = millis();
@@ -112,22 +89,28 @@ void myIMU()
     float roll = (float)myEulerData.p / 16.00;
 
     // Print values in a single line for easier reading in Serial Monitor
-    //Serial.print("(Yaw(Z-axis)): "); Serial.print(yaw);
+    Serial.print("(Yaw(Z-axis)): "); Serial.print(yaw);
     //Serial.print(" Roll(Y-axis): "); Serial.print(roll);
     //Serial.print(" Pitch(X-axis): "); Serial.println(pitch);
     //Serial.println();
 
   }
 
-
-
   return yaw; // Return the actual sensor value
+
 }
 
+
+ // Changed from 100ms to 20ms for a 50Hz refresh rate
 // Placeholder function to apply output
 void applyOutput(double output) {
-  int outputSpeed = map(output,0,360,-400,400);
+  int outputInt = (int)output; 
+  int outputSpeed = map(outputInt,0,360,-400,400);
+  Serial.println(outputSpeed);
   Motors.setSpeeds(outputSpeed, -outputSpeed);
   
 }
+
+
+
 
