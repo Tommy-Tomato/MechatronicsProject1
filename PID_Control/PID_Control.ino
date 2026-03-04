@@ -77,6 +77,28 @@ double readPosition() {
   // Implement sensor reading
 
  // Changed from 100ms to 20ms for a 50Hz refresh rate
+// Placeholder function to apply output
+void applyOutput(double output) {
+  int outputInt = (int)output; 
+  int outputSpeed = map(outputInt,0,360,-400,400);
+  Motors.setSpeeds(outputSpeed, -outputSpeed);
+  
+}
+
+
+
+#include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
+#include <Wire.h>
+
+struct bno055_t myBNO;
+struct bno055_euler myEulerData; //Structure to hold the Euler data
+
+unsigned long lastTime = 0;
+
+
+void myIMU() 
+{
+  // Changed from 100ms to 20ms for a 50Hz refresh rate
   if ((millis() - lastTime) >= 20) 
   {
     lastTime = millis();
