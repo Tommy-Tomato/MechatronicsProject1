@@ -4,16 +4,16 @@ DualMAX14870MotorShield Motors;
 
 // PID constants
 double Kp = 2.0; // Proportional gain
-double Ki = 0.5; // Integral gain
-double Kd = 1.0; // Derivative gain
+double Ki = 0.0625 ; // Integral gain
+double Kd = 0; // Derivative gain
 
 // Target position
-double setpoint = 100;
+double setpoint = 0;
 
 // Variables for PID control
 double input, output;
 double integral = 0;
-double derivative;
+double derivative = 0;
 double previous_error = 0;
 
 // Refresh rate
@@ -89,19 +89,27 @@ double readPosition() {
     //Serial.println("Yaw (Z-axis): "); Serial.print(yaw);
     //Serial.print(" Roll(Y-axis): "); Serial.print(roll);
     //Serial.print(" Pitch(X-axis): "); Serial.println(pitch);
-    //Serial.println();
-
-  return yaw; // Return the actual sensor value
-
+    //
+  if (yaw > 180){
+    yaw = yaw - 360;
+  }
+  Serial.println(yaw);
+    return yaw; // Return the actual sensor value
 }
 
 
  // Changed from 100ms to 20ms for a 50Hz refresh rate
 // Placeholder function to apply output
 void applyOutput(double output) {
+  //Serial.println(output);
   int outputInt = (int)output; 
-  int outputSpeed = map(outputInt,0,360,-400,400);
-  Serial.println(outputSpeed);
+  int outputSpeed = constrain(outputInt,-400,400);
+  if (outputSpeed < 75 && outputSpeed > 0) {
+    outputSpeed = 75;
+  } else if (outputSpeed < 0 && abs(outputSpeed) < 75) {
+    outputSpeed = -75;
+  }
+  //Serial.println(outputSpeed);
   Motors.setSpeeds(outputSpeed, -outputSpeed);
   
 }
