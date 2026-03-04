@@ -20,14 +20,23 @@ double previous_error = 0;
 unsigned long refreshRate = 100; // Refresh rate in milliseconds
 unsigned long lastTime = 0;
 
+//IMU configs
+#include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
+#include <Wire.h>
+
+struct bno055_t myBNO;
+struct bno055_euler myEulerData; //Structure to hold the Euler data
+ float yaw;
+    float pitch;
+    float roll;
+//
 
 
 void setup() {
   Serial.begin(9600);
-  
-<<<<<<< Updated upstream
+
   Motors.enableDrivers();
-=======
+
 //IMU configs
  //Initialize I2C communication
   Wire.begin();
@@ -38,12 +47,9 @@ void setup() {
   //Configuration to NDoF mode
   bno055_set_operation_mode(OPERATION_MODE_NDOF);
 
-  delay(1);
+  delay(5);
 //
 
-
-
->>>>>>> Stashed changes
 }
 
 void loop() {
@@ -69,33 +75,8 @@ void loop() {
 // Placeholder function to read your position sensor
 double readPosition() {
   // Implement sensor reading
-  return 0; // Return the actual sensor value
-}
 
-// Placeholder function to apply output
-void applyOutput(double output) {
-  int outputSpeed = map(output,0,360,-400,400);
-  Motors.setSpeeds(outputSpeed, -outputSpeed);
-  
-}
-<<<<<<< Updated upstream
- 
-=======
-
-
-
-#include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
-#include <Wire.h>
-
-struct bno055_t myBNO;
-struct bno055_euler myEulerData; //Structure to hold the Euler data
-
-unsigned long lastTime = 0;
-
-
-void myIMU() 
-{
-  // Changed from 100ms to 20ms for a 50Hz refresh rate
+ // Changed from 100ms to 20ms for a 50Hz refresh rate
   if ((millis() - lastTime) >= 20) 
   {
     lastTime = millis();
@@ -109,15 +90,22 @@ void myIMU()
     float roll = (float)myEulerData.p / 16.00;
 
     // Print values in a single line for easier reading in Serial Monitor
-    Serial.print("(Yaw(Z-axis)): "); Serial.print(yaw);
-    Serial.print(" Roll(Y-axis): "); Serial.print(roll);
-    Serial.print(" Pitch(X-axis): "); Serial.println(pitch);
-    Serial.println();
+    //Serial.print("(Yaw(Z-axis)): "); Serial.print(yaw);
+    //Serial.print(" Roll(Y-axis): "); Serial.print(roll);
+    //Serial.print(" Pitch(X-axis): "); Serial.println(pitch);
+    //Serial.println();
 
   }
+
+
+
+  return yaw; // Return the actual sensor value
+}
+
+// Placeholder function to apply output
+void applyOutput(double output) {
+  int outputSpeed = map(output,0,360,-400,400);
+  Motors.setSpeeds(outputSpeed, -outputSpeed);
   
 }
 
-
-
->>>>>>> Stashed changes
