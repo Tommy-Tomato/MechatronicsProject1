@@ -25,9 +25,9 @@ unsigned long lastTime = 0;
 #include <Wire.h>
 struct bno055_t myBNO;
 struct bno055_euler myEulerData; //Structure to hold the Euler data
- float yaw;
- float pitch;
- float roll;
+ double yaw;
+double pitch;
+ double roll;
 //
 
 
@@ -76,25 +76,20 @@ double readPosition() {
   // Implement sensor reading
 
 // Changed from 100ms to 20ms for a 50Hz refresh rate
-  if ((millis() - lastTime) >= 20) 
-  {
-    lastTime = millis();
-
+ 
     // Update Euler data into the structure
     bno055_read_euler_hrp(&myEulerData);			
 
     // Convert raw data to degrees (Divide by 16.0 as per Bosch API)
-    float yaw   = (float)myEulerData.h / 16.00;
-    float pitch  = (float)myEulerData.r / 16.00;
-    float roll = (float)myEulerData.p / 16.00;
+ yaw   = (double)myEulerData.h / 16.00;
+ pitch  = (double)myEulerData.r / 16.00;
+ roll = (double)myEulerData.p / 16.00;
 
     // Print values in a single line for easier reading in Serial Monitor
-    Serial.print("(Yaw(Z-axis)): "); Serial.print(yaw);
+    //Serial.println("Yaw (Z-axis): "); Serial.print(yaw);
     //Serial.print(" Roll(Y-axis): "); Serial.print(roll);
     //Serial.print(" Pitch(X-axis): "); Serial.println(pitch);
     //Serial.println();
-
-  }
 
   return yaw; // Return the actual sensor value
 
