@@ -1,3 +1,7 @@
+#include <DualMAX14870MotorShield.h>
+
+DualMAX14870MotorShield Motors;
+
 // PID constants
 double Kp = 2.0; // Proportional gain
 double Ki = 0.5; // Integral gain
@@ -16,8 +20,12 @@ double previous_error = 0;
 unsigned long refreshRate = 100; // Refresh rate in milliseconds
 unsigned long lastTime = 0;
 
+
+
 void setup() {
   Serial.begin(9600);
+  
+  Motors.enableDrivers();
 }
 
 void loop() {
@@ -48,6 +56,8 @@ double readPosition() {
 
 // Placeholder function to apply output
 void applyOutput(double output) {
-  // Implement actuator control
+  int outputSpeed = map(output,0,360,-400,400);
+  Motors.setSpeeds(outputSpeed, -outputSpeed);
+  
 }
-
+ 
