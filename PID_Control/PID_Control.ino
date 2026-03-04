@@ -74,13 +74,11 @@ double readPosition() {
 
 // Placeholder function to apply output
 void applyOutput(double output) {
-  int outputSpeed = map(output,0,360,-400,400);
+  int outputInt = (int)output; 
+  int outputSpeed = map(outputInt,0,360,-400,400);
   Motors.setSpeeds(outputSpeed, -outputSpeed);
   
 }
-<<<<<<< Updated upstream
- 
-=======
 
 
 
