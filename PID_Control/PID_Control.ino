@@ -100,7 +100,7 @@ double readPosition() {
 // Placeholder function to apply output
 void applyOutput(double output) {
   int outputInt = (int)output; 
-  int outputSpeed = map(outputInt,0,360,-400,400);
+  int outputSpeed = constrain(outputInt,-400,400);
   Serial.println(outputSpeed);
   Motors.setSpeeds(outputSpeed, -outputSpeed);
   
