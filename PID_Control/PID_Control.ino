@@ -10,7 +10,7 @@ double Ki = 0.0625 ; // Integral gain
 double Kd = 0; // Derivative gain
 
 // Target position
-double setpoint = 60;
+double setpoint = 0;
 
 // Variables for PID control
 double input, output;
@@ -49,7 +49,7 @@ void setup() {
 
   delay(5);
 //
-
+  setpoint = readPosition();
 }
 
 void loop() {
@@ -105,13 +105,13 @@ void applyOutput(double output) {
   //Serial.println(output);
   int outputInt = (int)output; 
   int outputSpeed = constrain(outputInt,-400,400);
-  if (outputSpeed < 75 && outputSpeed > 0) {
-    outputSpeed = 75;
-  } else if (outputSpeed < 0 && abs(outputSpeed) < 75) {
-    outputSpeed = -75;
-  }
+  //if (outputSpeed < 75 && outputSpeed > 0) {
+    //outputSpeed = 75;
+  //} else if (outputSpeed < 0 && abs(outputSpeed) < 75) {
+    //outputSpeed = -75;
+  //}
   //Serial.println(outputSpeed);
-  Motors.setSpeeds(outputSpeed, -outputSpeed);
+  Motors.setSpeeds(outputSpeed + 100, -outputSpeed + 100);
   
 }
 
