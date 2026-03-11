@@ -31,7 +31,7 @@ unsigned long pulseduration = 0;
 //ir sensors
 #define irLeft A8
 #define irRight A9
-const float DISTANCE_CUTOFF = 5; //NORMAL: 2.8
+const float DISTANCE_CUTOFF = 2.8; //NORMAL: 2.8
 
 //IMU configs
 
@@ -370,7 +370,7 @@ void loop() {
 
 void PIDSetSpeeds() {
       // Read current position
-    Serial.println("SETTING SPEED");
+    //Serial.println("SETTING SPEED");
     input = readPosition(); // Placeholder for position reading function
 
     // Calculate PID
@@ -407,8 +407,8 @@ double readPosition() {
     yaw = yaw - 360;
   }
   
-  Serial.print("yaw: ");
-  Serial.println(yaw);
+  //Serial.print("yaw: ");
+  //Serial.println(yaw);
     return yaw; // Return the actual sensor value
 }
 
