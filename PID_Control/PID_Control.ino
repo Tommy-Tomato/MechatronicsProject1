@@ -1,4 +1,6 @@
 #include <DualMAX14870MotorShield.h>
+#include <BNO055_support.h>
+#include <Wire.h>
 
 DualMAX14870MotorShield Motors;
 
@@ -8,7 +10,7 @@ double Ki = 0.0625 ; // Integral gain
 double Kd = 0; // Derivative gain
 
 // Target position
-double setpoint = 0;
+double setpoint = 60;
 
 // Variables for PID control
 double input, output;
@@ -21,8 +23,7 @@ unsigned long refreshRate = 100; // Refresh rate in milliseconds
 unsigned long lastTime = 0;
 
 //IMU configs
-#include "BNO055_support.h"		//Contains the bridge code between the API and Arduino
-#include <Wire.h>
+
 struct bno055_t myBNO;
 struct bno055_euler myEulerData; //Structure to hold the Euler data
  double yaw;
