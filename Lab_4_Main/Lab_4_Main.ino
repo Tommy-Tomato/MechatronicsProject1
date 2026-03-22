@@ -11,7 +11,7 @@ unsigned long refreshRate = 100; // Refresh rate in milliseconds ESTIMATE
 // PID constants
 double Kp = 2.0; // Proportional gain
 double Ki = 0.0625 ; // Integral gain
-double Kd = 0; // Derivative gain
+double Kd = 0.01; // Derivative gain
 
 bool isTurning = false;
 double turnStartYaw = 0;
