@@ -13,6 +13,12 @@ double Kp = 2.0; // Proportional gain
 double Ki = 0.0625 ; // Integral gain
 double Kd = 0; // Derivative gain
 
+bool isTurning = false;
+double turnStartYaw = 0;
+double targetYaw = 0;
+const double TURN_TOLERANCE = 5; // degrees
+
+
 // Target position
 double setpoint = 0;
 
@@ -78,6 +84,7 @@ double WALL_CUTOFF = 1.5;
 long startTime = millis();
 
 
+
 enum States {
   initialize,
   main,
@@ -104,6 +111,7 @@ bno055_set_operation_mode(OPERATION_MODE_NDOF);
   // ultrasonic sensor setup
   delay(5000);
   pinMode(signal, OUTPUT);
+  setpoint = readPosition();
 
   //motor setup
   Motors.enableDrivers();
@@ -125,9 +133,12 @@ bno055_set_operation_mode(OPERATION_MODE_NDOF);
   attachInterrupt(digitalPinToInterrupt(Motor2EPinB), changeUp2B, CHANGE);
 
 
+  
 }
 
 void loop() {
+
+  Serial.println(myState);
   //Get the raw distance measurement value
   measureDistance();
   distance = (pulseduration / 2) * 0.0343;
@@ -146,25 +157,26 @@ void loop() {
     After cooldown, activates sensing mode
     */
     case main: {
-
+      //Serial.println("main!");
       //check IR Sensors
+  
       float leftVolts = analogRead(irLeft) * 0.0048828125;  // value from sensor * (5/1024)
       float rightVolts = analogRead(irRight) * 0.0048828125;
 
       if (leftVolts > DISTANCE_CUTOFF && millis() - correctStartTime > correctDelay) {
         //Serial.print("ABOVE CUT");
-        myState = correctRight;
-        Serial.print("SET STATE -> ");
-        Serial.println(myState);
-        break;
+        //myState = correctRight;
+        //Serial.print("SET STATE -> ");
+        //Serial.println(myState);
+        //break;
       }
 
       if (rightVolts > DISTANCE_CUTOFF && millis() - correctStartTime > correctDelay) {
         //Serial.print("ABOVE CUT");
-        myState = correctLeft;
-        break;
+        //myState = correctLeft;
+        //break;
       }
-
+      //Serial.println("setting speeds");
       //Move Forwards
       PIDSetSpeeds();
       //Motors.setSpeeds(STRAIGHT_SPEED, STRAIGHT_SPEED + 1);
@@ -201,6 +213,7 @@ void loop() {
               Motors.setSpeeds(0, 0);
               delay(200);       //stability
               myState = right;  // turn right
+              Serial.println("got to state set");
             }
           break;
           }
@@ -285,80 +298,142 @@ void loop() {
     /*
     Left case: robot turns left
     */
-    case left:
-      Serial.println("turning left");
-      startTime = millis();
-      isSearching = false;
-      counter1 = 0;
-      counter2 = 0;
+case left: {
+  if (!isTurning) {
+    Serial.println("turning left");
 
-      while (abs(counter1) < 0.2 * FULL_ROTATION_COUNTS) {
-        Motors.setSpeeds(-TURN_SPEED, TURN_SPEED);
-        Serial.println(counter1);
-      }
+    turnStartYaw = readPosition();
+    setpoint = turnStartYaw - 90;
 
-      Motors.setSpeeds(0, 0);  // STOP
-      myState = main;
-      counter1 = 0;
-      counter2 = 0;
-      delay(100);
-      setpoint = readPosition();
-      break;
+    if (setpoint > 180) setpoint -= 360;
 
+    isTurning = true;
 
+    integral = 0;
+    previous_error = 0;
+
+    startTime = millis();
+    isSearching = false;
+  }
+
+  // run PID continuously
+  PIDSetSpeeds();
+
+  double currentYaw = readPosition();
+  double error = setpoint - currentYaw;
+  Serial.println(error);
+
+  // wrap error
+  if (error > 180) error -= 360;
+  if (error < -180) error += 360;
+
+  if (abs(error) < 5) {
+    Motors.setSpeeds(0, 0);
+
+    isTurning = false;
+    myState = main;
+
+    setpoint = currentYaw; // lock heading
+    delay(100);
+  }
+
+  break;
+}
 
 
 
     /*
     Right case: robot turns right
     */
-    case right:
-      startTime = millis();
-      isSearching = false;
-      Serial.println("turning right");
-      counter1 = 0;
-      counter2 = 0;
+case right: {
+Serial.println("gets to case");
+if (!isTurning) {
+    Serial.println("turning right");
 
-      while (abs(counter2) < 0.2 * FULL_ROTATION_COUNTS) {
-        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        Serial.println(counter1);
-      }
+    turnStartYaw = readPosition();
+    setpoint = turnStartYaw + 90;
 
-      Motors.setSpeeds(0, 0);  // STOP
+    if (setpoint > 180) setpoint -= 360;
 
-      
-        myState = main;
-        counter1 = 0;
-        counter2 = 0;
-        delay(100);
-        setpoint = readPosition();
-        break;
+    isTurning = true;
 
+    integral = 0;
+    previous_error = 0;
 
+    startTime = millis();
+    isSearching = false;
+  }
+
+  // run PID continuously
+  PIDSetSpeeds();
+
+  double currentYaw = readPosition();
+  double error = setpoint - currentYaw;
+  Serial.println(error);
+
+  // wrap error
+  if (error > 180) error -= 360;
+  if (error < -180) error += 360;
+
+  if (abs(error) < 5) {
+    Motors.setSpeeds(0, 0);
+
+    isTurning = false;
+    myState = main;
+
+    setpoint = currentYaw; // lock heading
+    delay(100);
+  }
+
+  break;
+}
 
 
     /*
     Back case: robot turns around
     */
-    case back:
-      startTime = millis();
-      isSearching = false;
-      Serial.println("turning around");
-      counter1 = 0;
-      counter2 = 0;
+    case back: {
 
-      while (abs(counter1) < 0.5 * FULL_ROTATION_COUNTS) {
-        Motors.setSpeeds(TURN_SPEED, -TURN_SPEED);
-        //Serial.println(counter1);
-      }
+    if (!isTurning) {
+    Serial.println("turning left");
 
-      Motors.setSpeeds(0, 0);  // STOP
-      myState = main;
-      counter1 = 0;
-      counter2 = 0;
-      delay(100);
-      setpoint = readPosition();
-      break;
+    turnStartYaw = readPosition();
+    setpoint = turnStartYaw + 180;
+
+    if (setpoint > 180) setpoint -= 360;
+
+    isTurning = true;
+
+    integral = 0;
+    previous_error = 0;
+
+    startTime = millis();
+    isSearching = false;
+  }
+
+  // run PID continuously
+  PIDSetSpeeds();
+
+  double currentYaw = readPosition();
+  double error = setpoint - currentYaw;
+  Serial.println(error);
+
+  // wrap error
+  if (error > 180) error -= 360;
+  if (error < -180) error += 360;
+
+  if (abs(error) < 5) {
+    Motors.setSpeeds(0, 0);
+
+    isTurning = false;
+    myState = main;
+
+    setpoint = currentYaw; // lock heading
+    delay(100);
+  }
+
+  break;
+    }
 
 
 
@@ -382,6 +457,7 @@ void PIDSetSpeeds() {
 
     // Apply output to your system
     applyOutput(output); // Placeholder for output application function
+    Serial.println(error);
 }
 
 // Placeholder function to read your position sensor
@@ -416,17 +492,25 @@ double readPosition() {
  // Changed from 100ms to 20ms for a 50Hz refresh rate
 // Placeholder function to apply output
 void applyOutput(double output) {
-  //Serial.println(output);
   int outputInt = (int)output; 
-  int outputSpeed = constrain(outputInt,-400,400);
-  //if (outputSpeed < 75 && outputSpeed > 0) {
-    //outputSpeed = 75;
-  //} else if (outputSpeed < 0 && abs(outputSpeed) < 75) {
-    //outputSpeed = -75;
-  //}
-  //Serial.println(outputSpeed);
-  Motors.setSpeeds(outputSpeed + 100, -outputSpeed + 100);
-  
+  int outputSpeed = constrain(outputInt, -200, 200);
+
+  if (isTurning) {
+    // PURE ROTATION
+    if (abs(outputSpeed) < 60){
+      if (outputSpeed < 0){
+        outputSpeed = outputSpeed - 60;
+      }
+      else if (outputSpeed > 0){
+        outputSpeed = outputSpeed + 60;
+      }
+    }
+    Motors.setSpeeds(outputSpeed, -outputSpeed);
+    Serial.println(outputSpeed);
+  } else {
+    // NORMAL DRIVING
+    Motors.setSpeeds(outputSpeed + 100, -outputSpeed + 100);
+  }
 }
 
 // ======================
