@@ -484,12 +484,20 @@ void applyOutput(double out) {
 void PIDSetSpeeds() {
   input = readPosition();
   double error = setpoint - input;
+
+  // ✅ Wrap error into (-180, 180]
+  if (error > 180)  error -= 360;
+  if (error < -180) error += 360;
+
   integral += error * (refreshRate / 1000.0);
+  
+  // ✅ Clamp integral to prevent windup
+  integral = constrain(integral, -100, 100);
+
   derivative = (error - previous_error) / (refreshRate / 1000.0);
   output = Kp * error + Ki * integral + Kd * derivative;
   previous_error = error;
   applyOutput(output);
-  Serial.println(error);
 }
 
 void motorControlLoop() {
@@ -600,8 +608,11 @@ void motorControlLoop() {
       if (!isTurning) {
         Serial.println(F("turning left"));
         turnStartYaw = readPosition();
+
         setpoint = turnStartYaw - 90;
-        if (setpoint > 180) setpoint -= 360;
+        if (setpoint > 180)  setpoint -= 360;
+        if (setpoint < -180) setpoint += 360;
+
         isTurning = true;
         integral = 0;
         previous_error = 0;
@@ -628,8 +639,9 @@ void motorControlLoop() {
       if (!isTurning) {
         Serial.println(F("turning right"));
         turnStartYaw = readPosition();
-        setpoint = turnStartYaw + 90;
-        if (setpoint > 180) setpoint -= 360;
+setpoint = turnStartYaw + 90;
+if (setpoint > 180)  setpoint -= 360;
+if (setpoint < -180) setpoint += 360;
         isTurning = true;
         integral = 0;
         previous_error = 0;
@@ -656,8 +668,9 @@ void motorControlLoop() {
       if (!isTurning) {
         Serial.println(F("turning back"));
         turnStartYaw = readPosition();
-        setpoint = turnStartYaw + 180;
-        if (setpoint > 180) setpoint -= 360;
+setpoint = turnStartYaw + 180;
+if (setpoint > 180)  setpoint -= 360;
+if (setpoint < -180) setpoint += 360;
         isTurning = true;
         integral = 0;
         previous_error = 0;
