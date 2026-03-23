@@ -102,7 +102,7 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 unsigned long refreshRate = 100;
 
 double Kp = 2.0;
-double Ki = 0.0625;
+double Ki = 0.1;
 double Kd = 0.01;
 
 bool isTurning = false;
@@ -470,34 +470,29 @@ void applyOutput(double out) {
   int outputInt = (int)out;
   int outputSpeed = constrain(outputInt, -200, 200);
   if (isTurning) {
-    if (abs(outputSpeed) < 60) {
-      if (outputSpeed < 0) outputSpeed -= 60;
-      else if (outputSpeed > 0) outputSpeed += 60;
+    if (abs(outputSpeed) < 75) {
+      if (outputSpeed < 0) outputSpeed -= 75;
+      else if (outputSpeed > 0) outputSpeed += 75;
     }
     Motors.setSpeeds(outputSpeed, -outputSpeed);
     Serial.println(outputSpeed);
   } else {
-    Motors.setSpeeds(outputSpeed + 100, -outputSpeed + 100);
+    Motors.setSpeeds(outputSpeed +110, -outputSpeed + 110);
   }
 }
 
 void PIDSetSpeeds() {
   input = readPosition();
   double error = setpoint - input;
-
-  // ✅ Wrap error into (-180, 180]
-  if (error > 180)  error -= 360;
+  // Shortest turn direction (avoids chasing 270° instead of -90°)
+  if (error > 180) error -= 360;
   if (error < -180) error += 360;
-
   integral += error * (refreshRate / 1000.0);
-  
-  // ✅ Clamp integral to prevent windup
-  integral = constrain(integral, -100, 100);
-
   derivative = (error - previous_error) / (refreshRate / 1000.0);
   output = Kp * error + Ki * integral + Kd * derivative;
   previous_error = error;
   applyOutput(output);
+  Serial.println(error);
 }
 
 void motorControlLoop() {
@@ -608,11 +603,8 @@ void motorControlLoop() {
       if (!isTurning) {
         Serial.println(F("turning left"));
         turnStartYaw = readPosition();
-
         setpoint = turnStartYaw - 90;
-        if (setpoint > 180)  setpoint -= 360;
-        if (setpoint < -180) setpoint += 360;
-
+        if (setpoint > 180) setpoint -= 360;
         isTurning = true;
         integral = 0;
         previous_error = 0;
@@ -630,6 +622,8 @@ void motorControlLoop() {
         isTurning = false;
         myState = main;
         setpoint = currentYaw;
+        integral = 0;
+        previous_error = 0;
         delay(100);
       }
       break;
@@ -639,9 +633,8 @@ void motorControlLoop() {
       if (!isTurning) {
         Serial.println(F("turning right"));
         turnStartYaw = readPosition();
-setpoint = turnStartYaw + 90;
-if (setpoint > 180)  setpoint -= 360;
-if (setpoint < -180) setpoint += 360;
+        setpoint = turnStartYaw + 90;
+        if (setpoint > 180) setpoint -= 360;
         isTurning = true;
         integral = 0;
         previous_error = 0;
@@ -659,6 +652,8 @@ if (setpoint < -180) setpoint += 360;
         isTurning = false;
         myState = main;
         setpoint = currentYaw;
+        integral = 0;
+        previous_error = 0;
         delay(100);
       }
       break;
@@ -668,9 +663,8 @@ if (setpoint < -180) setpoint += 360;
       if (!isTurning) {
         Serial.println(F("turning back"));
         turnStartYaw = readPosition();
-setpoint = turnStartYaw + 180;
-if (setpoint > 180)  setpoint -= 360;
-if (setpoint < -180) setpoint += 360;
+        setpoint = turnStartYaw + 180;
+        if (setpoint > 180) setpoint -= 360;
         isTurning = true;
         integral = 0;
         previous_error = 0;
@@ -688,6 +682,8 @@ if (setpoint < -180) setpoint += 360;
         isTurning = false;
         myState = main;
         setpoint = currentYaw;
+        integral = 0;
+        previous_error = 0;
         delay(100);
       }
       break;
