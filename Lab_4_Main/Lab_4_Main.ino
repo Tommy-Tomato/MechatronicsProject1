@@ -37,7 +37,7 @@
 // --- FILTER FLAG (broadcast mode only) ---
 // Define FILTER_MY_ROBOT to only process messages containing ROBOT_ID.
 // Comment it out to accept all valid broadcasts and display every robot.
-//#define FILTER_MY_ROBOT
+#define FILTER_MY_ROBOT
 
 // Timeout (ms) – if no new byte arrives within this window, treat
 // whatever is in the buffer as a complete message.
