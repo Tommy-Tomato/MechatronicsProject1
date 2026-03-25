@@ -94,16 +94,29 @@ unsigned long lastRxTime = 0;
 // Set true after START (matchByte==1), false after STOP — use in loop() to gate motors
 bool robotRunning = false;
 
-// ===================== Motor / sensors (your code) =====================
+//Motors
 DualMAX14870MotorShield Motors;
 Pixy2 pixy;
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28);
 
+const int Motor1EPinA = 2;
+const int Motor1EPinB = 3;
+const int Motor2EPinA = 18;
+const int Motor2EPinB = 19;
+
+int TURN_SPEED = 150;
+int STRAIGHT_SPEED = 90;
+int CORRECT_SPEED = 85;
+
+
+//PID
 unsigned long refreshRate = 100;
 
 double Kp = 2.0;
 double Ki = 0.1;
 double Kd = 0.01;
+
+double yaw = 0, pitch = 0, roll = 0;
 
 bool isTurning = false;
 double turnStartYaw = 0;
@@ -117,45 +130,16 @@ double integral = 0;
 double derivative = 0;
 double previous_error = 0;
 
+//ultrasonic
 const int ultrasonicPin = 26;
 int distance = 0;
 int gap = 10;
 unsigned long pulseduration = 0;
 
-#define irLeft A8
-#define irRight A9
-const float DISTANCE_CUTOFF = 2.8f;
-
-double yaw = 0, pitch = 0, roll = 0;
-
-const int Motor1EPinA = 2;
-const int Motor1EPinB = 3;
-const int Motor2EPinA = 18;
-const int Motor2EPinB = 19;
-
-volatile long counter1 = 0;
-volatile long counter2 = 0;
-
-float COUNTS_PER_REV = 12.0f * 4.0f * 9.75f;
-float TURN_CIRC = 59.69f;
-float WHEEL_CIRC_CM = 22;
-float FULL_ROTATION_COUNTS = (TURN_CIRC / WHEEL_CIRC_CM) * COUNTS_PER_REV;
-
-int TURN_SPEED = 150;
-int STRAIGHT_SPEED = 90;
-int CORRECT_SPEED = 85;
-
-int CORRECTION_COUNT = 20;
-float correctStartTime = 0;
-float correctDelay = 5000;
-
-int SEARCH_COOLDOWN = 50000;
-bool isSearching = false;
-double WALL_CUTOFF = 1.5;
 
 unsigned long motorBehaviorStartMs = 0;
 
-enum States { initialize, main, correctLeft, correctRight, left, right, back };
+enum States { initialize, main, left, right, back };
 States myState = initialize;
 
 void changeUp1A();
@@ -495,6 +479,7 @@ void PIDSetSpeeds() {
   Serial.println(error);
 }
 
+//MAIN FINITE STATE FUNCTION
 void motorControlLoop() {
   measureDistance();
   distance = (int)((pulseduration / 2) * 0.0343);
@@ -562,42 +547,8 @@ void motorControlLoop() {
           break;
         }
       }
-      if (millis() - motorBehaviorStartMs > (unsigned long)SEARCH_COOLDOWN) {
-        Serial.println(F("SEARCHING"));
-        isSearching = true;
-      }
       break;
     }
-
-    case correctLeft:
-      correctStartTime = millis();
-      Serial.println(F("left wall too close - moving right"));
-      counter1 = 0;
-      counter2 = 0;
-      while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(0, -CORRECT_SPEED);
-        delay(100);
-        Serial.println(counter1);
-      }
-      myState = main;
-      counter1 = 0;
-      counter2 = 0;
-      break;
-
-    case correctRight:
-      correctStartTime = millis();
-      counter1 = 0;
-      counter2 = 0;
-      Serial.println(F("right wall too close - moving left"));
-      while (abs(counter2) < CORRECTION_COUNT && abs(counter1) < CORRECTION_COUNT) {
-        Motors.setSpeeds(-CORRECT_SPEED, 0);
-        delay(100);
-        Serial.println(counter2);
-      }
-      myState = main;
-      counter1 = 0;
-      counter2 = 0;
-      break;
 
     case left: {
       if (!isTurning) {
@@ -609,14 +560,16 @@ void motorControlLoop() {
         integral = 0;
         previous_error = 0;
         motorBehaviorStartMs = millis();
-        isSearching = false;
       }
+      
       PIDSetSpeeds();
       double currentYaw = readPosition();
       double error = setpoint - currentYaw;
       Serial.println(error);
+      
       if (error > 180) error -= 360;
       if (error < -180) error += 360;
+      
       if (abs(error) < 3) {
         Motors.setSpeeds(0, 0);
         isTurning = false;
@@ -630,6 +583,7 @@ void motorControlLoop() {
     }
 
     case right: {
+      
       if (!isTurning) {
         Serial.println(F("turning right"));
         turnStartYaw = readPosition();
@@ -639,14 +593,16 @@ void motorControlLoop() {
         integral = 0;
         previous_error = 0;
         motorBehaviorStartMs = millis();
-        isSearching = false;
       }
+
       PIDSetSpeeds();
       double currentYaw = readPosition();
       double error = setpoint - currentYaw;
       Serial.println(error);
+      
       if (error > 180) error -= 360;
       if (error < -180) error += 360;
+      
       if (abs(error) < 3) {
         Motors.setSpeeds(0, 0);
         isTurning = false;
@@ -669,14 +625,15 @@ void motorControlLoop() {
         integral = 0;
         previous_error = 0;
         motorBehaviorStartMs = millis();
-        isSearching = false;
       }
       PIDSetSpeeds();
       double currentYaw = readPosition();
       double error = setpoint - currentYaw;
       Serial.println(error);
+      
       if (error > 180) error -= 360;
       if (error < -180) error += 360;
+      
       if (abs(error) < 5) {
         Motors.setSpeeds(0, 0);
         isTurning = false;
@@ -695,25 +652,6 @@ void motorControlLoop() {
   }
 }
 
-void changeUp1A() {
-  if (digitalRead(Motor1EPinA) == digitalRead(Motor1EPinB)) counter1++;
-  else counter1--;
-}
-
-void changeUp1B() {
-  if (digitalRead(Motor1EPinA) == digitalRead(Motor1EPinB)) counter1--;
-  else counter1++;
-}
-
-void changeUp2A() {
-  if (digitalRead(Motor2EPinA) == digitalRead(Motor2EPinB)) counter2++;
-  else counter2--;
-}
-
-void changeUp2B() {
-  if (digitalRead(Motor2EPinA) == digitalRead(Motor2EPinB)) counter2--;
-  else counter2++;
-}
 
 // ---------------------------------------------------------------
 void setup() {
