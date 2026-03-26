@@ -382,7 +382,6 @@ void processMessage() {
     Serial.println(yPos);
 #endif
 
-///// The below code was added by me. Check if the below code is working.
     const int xMin = 85;
     const int xMax = 105;
     const int yMin = 15;
@@ -390,8 +389,7 @@ void processMessage() {
 
     static int prevMatchByte = 0;
 
-    // START: match bit M goes 0→1 (edge). Not "match==1 and not running" — that would
-    // re-START every frame after FINISHED while the match is still active.
+    // START: match bit M goes 0→1 (edge)
     if (matchByte == 1 && prevMatchByte == 0) {
       robotRunning = true;
       Serial.println("START");
